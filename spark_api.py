@@ -92,5 +92,18 @@ def get_pandas_num_crimes_on_crime_type(df):
             .agg(count("*").alias("count"))
     )
     return df_count_crime_type.toPandas()
-    
+
+def get_pandas_timeline(df):
+    df_animated_neighborhood = (
+        df
+            .withColumn("month", month("FIRST_OCCURRENCE_DATE"))
+            .withColumn("year", year("FIRST_OCCURRENCE_DATE"))
+            .groupBy("month", "year", "NEIGHBORHOOD_ID")
+            .agg(count("*").alias("count_crimes"))
+            .orderBy("NEIGHBORHOOD_ID")
+    )
+    df_animated_neighborhood = df_animated_neighborhood.withColumn("date_month",concat(col("year"), lit("-"), col("month"))).withColumn("date_month", to_date("date_month", "yyyy-M"))
+    df_animated_neighborhood = df_animated_neighborhood.drop("month", "year")
+    return df_animated_neighborhood.toPandas()
+
 

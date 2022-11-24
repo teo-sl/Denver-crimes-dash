@@ -1,5 +1,5 @@
 import plotly.express as px
-from spark_api import get_pandas_by_month,get_pandas_by_year,get_pandas_by_day, get_pandas_filtered, get_pandas_num_crimes_on_crime_type, get_pandas_num_crimes_on_neighborhood
+from spark_api import get_pandas_by_month,get_pandas_by_year,get_pandas_by_day, get_pandas_filtered, get_pandas_num_crimes_on_crime_type, get_pandas_num_crimes_on_neighborhood, get_pandas_timeline
 
 x = True
 plot_config = {
@@ -83,5 +83,19 @@ def get_bar_num_crimes_on_neighborhood(df):
 def get_bar_num_crimes_on_crime_type(df):
     df_pandas = get_pandas_num_crimes_on_crime_type(df)
     fig = px.bar(df_pandas, x='OFFENSE_CATEGORY_ID', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    return fig
+
+
+def get_map_timeline(df):
+    df_pandas = get_pandas_timeline(df)
+
+    # animation frame based on date_month, bar plot
+    # color based on count_crimes
+    fig = px.bar(df_pandas, x="count_crimes", y="NEIGHBORHOOD_ID", color="count_crimes", animation_frame="date_month", hover_data=['count_crimes'],template='plotly_dark', color_discrete_sequence=plot_palette)
+    # make the animation slower
+    fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 1000
+    # set graph dimension
+    fig.update_layout(width=700, height=700)    
+    
     return fig
 

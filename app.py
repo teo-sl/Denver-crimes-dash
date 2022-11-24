@@ -13,7 +13,7 @@ from dash.dependencies import Input, Output, State
 from pyspark.sql.types import IntegerType,StringType,StructField,StructType
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
-from plots_api import get_bar_num_crimes_on_crime_type, get_bar_num_crimes_on_neighborhood, get_scatter_num_crimes_on_day, get_scatter_num_crimes_on_month, get_scatter_num_crimes_on_year, getMap
+from plots_api import get_bar_num_crimes_on_crime_type, get_bar_num_crimes_on_neighborhood, get_map_timeline, get_scatter_num_crimes_on_day, get_scatter_num_crimes_on_month, get_scatter_num_crimes_on_year, getMap
 
 spark = pyspark.sql.SparkSession.builder.appName("Stars").getOrCreate()
 df = spark.read.csv('cleaned_crime.csv', header=True, inferSchema=True)
@@ -219,6 +219,18 @@ slider_victims = html.Div([
     )
 ])
 
+map_timeline = html.Div(
+    className='parent',
+    children=[
+        get_graph('div2',
+            figure=get_map_timeline(df),
+            id='map_timeline',
+            config=plot_config,
+            clear_on_unhover=True
+        )
+    ]
+)
+
 
 # define app layout with crime_type and screen1
 app.layout = html.Div(
@@ -232,7 +244,8 @@ app.layout = html.Div(
         time_period,
         screen3,
         screen2,
-        screen4
+        screen4,
+        map_timeline
     ],
 )
 
