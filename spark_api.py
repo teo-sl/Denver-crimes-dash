@@ -48,6 +48,19 @@ def get_pandas_by_month(df):
     df_count_month = df_count_month.drop("month", "year")
     return df_count_month.toPandas()
 
+def get_pandas_by_month_victims(df):
+    df_count_month = (
+        df
+            .withColumn("month", month("FIRST_OCCURRENCE_DATE"))
+            .withColumn("year", year("FIRST_OCCURRENCE_DATE"))
+            #.select("month","year")
+            .groupBy("month", "year")
+            .agg(sum("VICTIM_COUNT").alias("count"))
+    )
+    df_count_month = df_count_month.withColumn("date", concat(col("year"), lit("-"), col("month"))).withColumn("date", date_format("date", "yyyy-M"))
+    df_count_month = df_count_month.drop("month", "year")
+    return df_count_month.toPandas()
+
 def get_pandas_by_day(df):
     df_count_day = (df.withColumn("day", dayofmonth("FIRST_OCCURRENCE_DATE"))
     .withColumn("month", month("FIRST_OCCURRENCE_DATE"))
@@ -59,6 +72,19 @@ def get_pandas_by_day(df):
     df_count_day = df_count_day.withColumn("date", concat(col("year"), lit("-"), col("month"), lit("-"), col("day"))).withColumn("date", to_date("date", "yyyy-M-d"))
     df_count_day = df_count_day.drop("day", "month", "year")
     return df_count_day.toPandas()
+
+def get_pandas_by_day_victims(df):
+    df_count_day = (df.withColumn("day", dayofmonth("FIRST_OCCURRENCE_DATE"))
+    .withColumn("month", month("FIRST_OCCURRENCE_DATE"))
+    .withColumn("year", year("FIRST_OCCURRENCE_DATE"))
+    #.select("day","month","year")
+    .groupBy("day", "month", "year")
+    .agg(sum("VICTIM_COUNT").alias("count"))
+    )
+    df_count_day = df_count_day.withColumn("date", concat(col("year"), lit("-"), col("month"), lit("-"), col("day"))).withColumn("date", to_date("date", "yyyy-M-d"))
+    df_count_day = df_count_day.drop("day", "month", "year")
+    return df_count_day.toPandas()
+
 
 def get_pandas_by_year(df):
     df_count_year = (
@@ -72,6 +98,18 @@ def get_pandas_by_year(df):
     df_count_year = df_count_year.drop("year")
     return df_count_year.toPandas()
 
+def get_pandas_by_year_victims(df):
+    df_count_year = (
+        df
+            .withColumn("year", year("FIRST_OCCURRENCE_DATE"))
+            #.select("year")
+            .groupBy("year")
+            .agg(sum("VICTIM_COUNT").alias("count"))
+    )
+    df_count_year = df_count_year.withColumn("date", concat(col("year"))).withColumn("date", date_format("date", "yyyy"))
+    df_count_year = df_count_year.drop("year")
+    return df_count_year.toPandas()
+
 
 def get_pandas_num_crimes_on_neighborhood(df):
     # aggregate by NEIGHBORHOOD_ID and count all rows
@@ -80,6 +118,18 @@ def get_pandas_num_crimes_on_neighborhood(df):
             .select("NEIGHBORHOOD_ID")
             .groupBy("NEIGHBORHOOD_ID")
             .agg(count("*").alias("count"))
+            .orderBy(desc("count"))
+    )
+    return df_count_neighborhood.toPandas()
+
+def get_pandas_num_victims_on_neighborhood(df):
+    # aggregate by NEIGHBORHOOD_ID and count all rows
+    df_count_neighborhood = (
+        df
+            #.select("NEIGHBORHOOD_ID")
+            .groupBy("NEIGHBORHOOD_ID")
+            .agg(sum("VICTIM_COUNT").alias("count"))
+            .orderBy(desc("count"))
     )
     return df_count_neighborhood.toPandas()
 
@@ -90,8 +140,21 @@ def get_pandas_num_crimes_on_crime_type(df):
             .select("OFFENSE_CATEGORY_ID")
             .groupBy("OFFENSE_CATEGORY_ID")
             .agg(count("*").alias("count"))
+            .orderBy(desc("count"))
     )
     return df_count_crime_type.toPandas()
+
+def get_pandas_num_victims_on_crime_type(df):
+    # aggregate by OFFENSE_CATEGORY_ID and count all rows
+    df_count_crime_type = (
+        df
+            #.select("OFFENSE_CATEGORY_ID")
+            .groupBy("OFFENSE_CATEGORY_ID")
+            .agg(sum("VICTIM_COUNT").alias("count"))
+            .orderBy(desc("count"))
+    )
+    return df_count_crime_type.toPandas()
+
 
 def get_pandas_timeline(df):
     df_animated_neighborhood = (
@@ -106,4 +169,26 @@ def get_pandas_timeline(df):
     df_animated_neighborhood = df_animated_neighborhood.drop("month", "year")
     return df_animated_neighborhood.toPandas()
 
+def get_pandas_timeline_victims(df):
+    df_animated_neighborhood = (
+        df
+            .withColumn("month", month("FIRST_OCCURRENCE_DATE"))
+            .withColumn("year", year("FIRST_OCCURRENCE_DATE"))
+            .groupBy("month", "year", "NEIGHBORHOOD_ID")
+            .agg(sum("VICTIM_COUNT").alias("count_crimes"))
+            .orderBy("NEIGHBORHOOD_ID")
+    )
+    df_animated_neighborhood = df_animated_neighborhood.withColumn("date_month",concat(col("year"), lit("-"), col("month"))).withColumn("date_month", to_date("date_month", "yyyy-M"))
+    df_animated_neighborhood = df_animated_neighborhood.drop("month", "year")
+    return df_animated_neighborhood.toPandas()
 
+def get_pandas_victims_num_ranked(df):
+    # get the number of crimes for each value of VICTIM_COUNT
+    df_count_victims = (
+        df
+            .groupBy("VICTIM_COUNT")
+            .agg(count("*").alias("num_crimes"))
+            .select(col("VICTIM_COUNT").alias("num_victims"), "num_crimes")
+            .orderBy("num_crimes", ascending=False)
+    )
+    return df_count_victims.toPandas()

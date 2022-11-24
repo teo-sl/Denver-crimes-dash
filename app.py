@@ -8,17 +8,20 @@ import dash_html_components as html
 import pandas as pd
 import pyspark
 
+
 import plotly.express as px
 from dash.dependencies import Input, Output, State
 from pyspark.sql.types import IntegerType,StringType,StructField,StructType
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
-from plots_api import get_bar_num_crimes_on_crime_type, get_bar_num_crimes_on_neighborhood, get_map_timeline, get_scatter_num_crimes_on_day, get_scatter_num_crimes_on_month, get_scatter_num_crimes_on_year, getMap
+from plots_api import get_bar_num_crimes_on_crime_type, get_bar_num_crimes_on_neighborhood, get_bar_num_victims_on_crime_type, get_bar_num_victims_on_neighborhood, get_map_timeline, get_map_timeline_victims, get_scatter_num_crimes_on_day, get_scatter_num_crimes_on_month, get_scatter_num_crimes_on_year, get_scatter_num_victims_on_day, get_scatter_num_victims_on_month, get_scatter_num_victims_on_year, get_victims_num_ranked, getMap
 
 spark = pyspark.sql.SparkSession.builder.appName("Stars").getOrCreate()
 df = spark.read.csv('cleaned_crime.csv', header=True, inferSchema=True)
 df = df.withColumn("FIRST_OCCURRENCE_DATE", to_timestamp("FIRST_OCCURRENCE_DATE", "MM/dd/yyyy hh:mm:ss a"))
 df = df.withColumn("REPORTED_DATE", to_timestamp("REPORTED_DATE", "MM/dd/yyyy hh:mm:ss a"))
+
+
 
 
 # get the unique values for CRIME_TYPE
@@ -28,6 +31,12 @@ neighborhoods = df.select('NEIGHBORHOOD_ID').distinct().toPandas()['NEIGHBORHOOD
 
 # get max in VICTIM_COUNT
 max_victim_count = df.select(max('VICTIM_COUNT')).collect()[0][0]
+
+
+
+
+# set dash table dimensions
+
 
 
 
@@ -149,20 +158,9 @@ screen1 = html.Div(
     [dcc.Graph('map_graph1')]
 )
 
-screen2 = html.Div(
-    className='parent',
-    children=[
-        get_graph('div2',
-            figure = get_bar_num_crimes_on_neighborhood(df),
-            id='bar-graph1',
-            config=plot_config,
-            clear_on_unhover=True
-        )
-    ]
-)
 
-# define a dive to put a scatter plot
-screen3 = html.Div(
+
+crimes_victims = html.Div(
     className='parent',
     children=[
         get_graph('div2',
@@ -171,22 +169,54 @@ screen3 = html.Div(
             config=plot_config,
             clear_on_unhover=True
         ),
-    ]
-)
-
-screen4 = html.Div(
-    className='parent',
-    children=[
         get_graph('div2',
             figure=get_bar_num_crimes_on_crime_type(df),
             id='bar-graph2',
             config=plot_config,
             clear_on_unhover=True
         ),
+        get_graph('div2',
+            figure = get_bar_num_crimes_on_neighborhood(df),
+            id='bar-graph1',
+            config=plot_config,
+            clear_on_unhover=True
+        ),
+        get_graph('div2',
+            figure=get_map_timeline(df),
+            id='map_timeline',
+            config=plot_config,
+            clear_on_unhover=True
+        )
+    ]
+)
+information = html.Div(
+    className='parent',
+    children=[
+        get_victims_num_ranked(df)
     ]
 )
 
-#
+# define a radio button for selection victims or crimes
+radio_victims_crimes = html.Div(
+    className='menu',
+    children=[
+        html.Div(
+            className='menu-title',
+            children=[
+                html.H3('Select Crimes or Victims'),
+            ],
+        ),
+        dcc.RadioItems(
+            id='radio-button',
+            options=[
+                {'label': 'Crimes', 'value': 'Crimes'},
+                {'label': 'Victims', 'value': 'Victims'},
+            ],
+            value='Crimes',
+            labelStyle={'display': 'inline-block'}
+        ),
+    ]
+)
 
 #define a radio button for selecting the time period
 time_period = html.Div(
@@ -219,17 +249,10 @@ slider_victims = html.Div([
     )
 ])
 
-map_timeline = html.Div(
-    className='parent',
-    children=[
-        get_graph('div2',
-            figure=get_map_timeline(df),
-            id='map_timeline',
-            config=plot_config,
-            clear_on_unhover=True
-        )
-    ]
-)
+
+
+# create a div for the number of crimes, victims, and neighborhoods with values returned by a function
+
 
 
 # define app layout with crime_type and screen1
@@ -241,29 +264,66 @@ app.layout = html.Div(
         crime_type,
         neighborhood,
         screen1,
+        radio_victims_crimes,
         time_period,
-        screen3,
-        screen2,
-        screen4,
-        map_timeline
+        crimes_victims,
+        information
     ],
 )
 
 
-# define callback for radio button that return get_scatter function
+# define callback for radio victims or crimes
 @app.callback(
-    Output("scatter_graph1", "figure"),
-    [
-        Input('time-period', 'value'),
-    ])
-def update_scatter(time_period):
-
-    if(time_period=='years'):
-        return get_scatter_num_crimes_on_year(df)
-    elif(time_period=='months'):
-        return get_scatter_num_crimes_on_month(df)
+    Output('scatter_graph1', 'figure'),
+    [Input('radio-button', 'value'),
+        Input('time-period', 'value')]
+)
+def update_scatter_graph1(radio_button, time_period):
+    if radio_button == 'Crimes':
+        if(time_period=='years'):
+            return get_scatter_num_crimes_on_year(df)
+        elif(time_period=='months'):
+            return get_scatter_num_crimes_on_month(df)
+        else:
+            return get_scatter_num_crimes_on_day(df)
     else:
-        return get_scatter_num_crimes_on_day(df)
+        if(time_period=='years'):
+            return get_scatter_num_victims_on_year(df)
+        elif(time_period=='months'):
+            return get_scatter_num_victims_on_month(df)
+        else:
+            return get_scatter_num_victims_on_day(df)
+
+@app.callback(
+    Output('bar-graph1', 'figure'),
+    [Input('radio-button', 'value')]
+)
+def update_bar_graph1(radio_button):
+    if radio_button == 'Crimes':
+        return get_bar_num_crimes_on_neighborhood(df)
+    else:
+        return get_bar_num_victims_on_neighborhood(df)
+
+@app.callback(
+    Output('bar-graph2', 'figure'),
+    [Input('radio-button', 'value')]
+)
+def update_bar_graph2(radio_button):
+    if radio_button == 'Crimes':
+        return get_bar_num_crimes_on_crime_type(df)
+    else:
+        return get_bar_num_victims_on_crime_type(df)
+
+@app.callback(
+    Output('map_timeline', 'figure'),
+    [Input('radio-button', 'value')]
+)
+def update_map_timeline(radio_button):
+    if radio_button == 'Crimes':
+        return get_map_timeline(df)
+    else:
+        return get_map_timeline_victims(df)
+
 
 # define callback for dropdown menu that return getMap function
 @app.callback(
@@ -275,6 +335,10 @@ def update_scatter(time_period):
     ])
 def update_map(neighborhood,c_type,num_victims):
     return getMap(df,neighborhood,c_type,num_victims)
+
+
+
+
 
 
 
