@@ -156,14 +156,10 @@ neighborhood = html.Div(
 
 
 screen1 = html.Div(
-    [dcc.Graph('map_graph1')],
-     id = 'screen-1',
-    style= {'display': 'block'}
-)
-screen2 = html.Div(
-    [dcc.Graph('map_graph2')],
-    id = 'screen-2',
-    style= {'display': 'none'}
+    [
+        dcc.Store(id='fig_store'),
+        dcc.Graph(id='map-graph1')
+    ]
 )
 
 crimes_victims = html.Div(
@@ -270,12 +266,11 @@ app.layout = html.Div(
         crime_type,
         neighborhood,
         screen1,
-        screen2,
         radio_victims_crimes,
         time_period,
         crimes_victims,
-        information,
-    ],
+        information
+    ]
 )
 
 
@@ -334,28 +329,32 @@ def update_map_timeline(radio_button):
 
 # define callback for dropdown menu that return getMap function
 @app.callback(
-    [
-        Output("map_graph1", "figure"),
-        Output("map_graph2","figure"),
-        Output('screen-1','style'),
-        Output('screen-2','style')
-    ],
+    Output("fig_store", "data"),
     [
         Input('neighborhood', 'value'),
         Input('crime-type', 'value'),
-        Input('my-slider', 'value'),
-        State('screen-1','style'),
-        State('screen-2','style')
+        Input('my-slider', 'value')
     ])
-def update_map(neighborhood,c_type,num_victims,state1,state2):
+def update_map(neighborhood,c_type,num_victims):
+    return getMap(df,neighborhood,c_type,num_victims)
     
-    if(state1['display']=='none'):
-        return getMap(df,neighborhood,c_type,num_victims),{},{'display' : 'block'},{'display':'none'}
-    if(state2['display']=='none'):
-        return {},getMap(df,neighborhood,c_type,num_victims),{'display':'none'},{'display' : 'block'}
-
-    return {},{},{'display' : 'none'},{'display' : 'none'}
-
+    
+app.clientside_callback(
+    '''
+    function (figure, graph_id) {
+        if(figure === undefined) {
+            return {'data': [], 'layout': {}};
+        }
+        var graphDiv = document.getElementById(graph_id);
+        var data = figure.data;
+        var layout = figure.layout;        
+        Plotly.newPlot(graphDiv, data, layout);
+    }
+    ''',
+    Output('map-graph1', 'figure'),
+    Input('fig_store', 'data'),
+    State('map-graph1', 'id')
+)
 
 
 
@@ -368,8 +367,8 @@ def update_map(neighborhood,c_type,num_victims,state1,state2):
 if __name__ == '__main__':
     logger.info('app running')
     port = os.environ.get('PORT', 9000)
-    debug = bool(os.environ.get('PYCHARM_HOSTED', os.environ.get('DEBUG', False)))
-    app.run_server(debug=debug,
+    #debug = bool(os.environ.get('PYCHARM_HOSTED', os.environ.get('DEBUG', False)))
+    app.run_server(debug=True,
                    host='0.0.0.0',
                    port=port)
 
