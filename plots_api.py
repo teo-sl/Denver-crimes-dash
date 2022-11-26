@@ -49,6 +49,10 @@ def getMap(df,neighborhood,crime_type,num_victims):
     
 
     geo_df = get_pandas_filtered(df,neighborhood,crime_type,num_victims)
+    print(geo_df.head())
+
+    if(geo_df.shape[0]==0): 
+        return {}
     """
     fig = px.scatter_geo(geo_df, lat="GEO_LAT", lon="GEO_LON", hover_data=["OFFENSE_CATEGORY_ID","VICTIM_COUNT"], color="OFFENSE_CATEGORY_ID",scope='usa')
              
@@ -64,10 +68,10 @@ def getMap(df,neighborhood,crime_type,num_victims):
     return fig
 
     """
-    fig = px.scatter_mapbox(geo_df, lat=geo_df.GEO_LAT, lon=geo_df.GEO_LON, zoom=10, height=300,hover_data=['NEIGHBORHOOD_ID','OFFENSE_CATEGORY_ID'],color='OFFENSE_CATEGORY_ID')
+    fig = px.scatter_mapbox(geo_df, lat=geo_df.GEO_LAT, lon=geo_df.GEO_LON, zoom=10, height=300,hover_data=['NEIGHBORHOOD_ID','OFFENSE_CATEGORY_ID'],color='VICTIM_COUNT')
     fig.update_layout(
         mapbox_style="open-street-map")
-        
+    
 
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig

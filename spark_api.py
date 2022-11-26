@@ -21,6 +21,9 @@ def get_pandas_filtered(df,neighborhood_p,crime_type_p,num_victims_p):
     
     df_filtered = df
 
+    df_filtered = df_filtered.drop("OFFENSE_TYPE_ID","FIRST_OCCURRENCE_DATE","REPORTED_DATE","GEO_X","GEO_Y","IS_CRIME","IS_TRAFFIC")
+
+
     if(neighborhood!='All'):
         df_filtered = df_filtered.filter(df.NEIGHBORHOOD_ID == neighborhood)
     if(crime_type!='All'):

@@ -85,6 +85,7 @@ def dropdown_options(col):
 app = dash.Dash(
     __name__,
     external_stylesheets=external_stylesheets,
+    eager_loading=True
 )
 
 app.index_string = open('index.html', 'r').read()
@@ -155,10 +156,15 @@ neighborhood = html.Div(
 
 
 screen1 = html.Div(
-    [dcc.Graph('map_graph1')]
+    [dcc.Graph('map_graph1')],
+     id = 'screen-1',
+    style= {'display': 'block'}
 )
-
-
+screen2 = html.Div(
+    [dcc.Graph('map_graph2')],
+    id = 'screen-2',
+    style= {'display': 'none'}
+)
 
 crimes_victims = html.Div(
     className='parent',
@@ -264,10 +270,11 @@ app.layout = html.Div(
         crime_type,
         neighborhood,
         screen1,
+        screen2,
         radio_victims_crimes,
         time_period,
         crimes_victims,
-        information
+        information,
     ],
 )
 
@@ -327,14 +334,30 @@ def update_map_timeline(radio_button):
 
 # define callback for dropdown menu that return getMap function
 @app.callback(
-    Output("map_graph1", "figure"),
+    [
+        Output("map_graph1", "figure"),
+        Output("map_graph2","figure"),
+        Output('screen-1','style'),
+        Output('screen-2','style')
+    ],
     [
         Input('neighborhood', 'value'),
         Input('crime-type', 'value'),
-        Input('my-slider', 'value')
+        Input('my-slider', 'value'),
+        State('screen-1','style'),
+        State('screen-2','style')
     ])
-def update_map(neighborhood,c_type,num_victims):
-    return getMap(df,neighborhood,c_type,num_victims)
+def update_map(neighborhood,c_type,num_victims,state1,state2):
+    
+    if(state1['display']=='none'):
+        return getMap(df,neighborhood,c_type,num_victims),{},{'display' : 'block'},{'display':'none'}
+    if(state2['display']=='none'):
+        return {},getMap(df,neighborhood,c_type,num_victims),{'display':'none'},{'display' : 'block'}
+
+    return {},{},{'display' : 'none'},{'display' : 'none'}
+
+
+
 
 
 
@@ -349,6 +372,7 @@ if __name__ == '__main__':
     app.run_server(debug=debug,
                    host='0.0.0.0',
                    port=port)
+
 
 
 
