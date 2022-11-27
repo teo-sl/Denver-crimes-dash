@@ -33,9 +33,11 @@ def get_pandas_filtered(df,neighborhood_p,crime_type_p,num_victims_p):
         df_filtered = df_filtered.filter(df.VICTIM_COUNT >= num_victims)
     
     if(df.count()>30_000):
-        return df_filtered.sample(False, 0.01, seed=42).toPandas()
+        return df_filtered.sample(False, 0.01).toPandas()
+    elif (df.count()< 20_000):
+        return df_filtered.toPandas()
     else:
-        return df_filtered.sample(False,0.1,seed=42).toPandas()
+        return df_filtered.sample(False,0.5).toPandas()
 
 
 def get_pandas_by_month(df):
@@ -166,9 +168,9 @@ def get_pandas_timeline(df):
             .withColumn("year", year("FIRST_OCCURRENCE_DATE"))
             .groupBy("month", "year", "NEIGHBORHOOD_ID")
             .agg(count("*").alias("count_crimes"))
-            .orderBy("NEIGHBORHOOD_ID")
     )
     df_animated_neighborhood = df_animated_neighborhood.withColumn("date_month",concat(col("year"), lit("-"), col("month"))).withColumn("date_month", to_date("date_month", "yyyy-M"))
+    df_animated_neighborhood = df_animated_neighborhood.orderBy("date_month", "NEIGHBORHOOD_ID")
     df_animated_neighborhood = df_animated_neighborhood.drop("month", "year")
     return df_animated_neighborhood.toPandas()
 

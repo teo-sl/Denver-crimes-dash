@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 import numpy as np
 import dash
 import dash_bootstrap_components as dbc
@@ -198,6 +199,20 @@ information = html.Div(
     ]
 )
 
+tmp1 = html.Div(
+    className='parent',
+    id='tmp-id1',
+    children=[],
+)
+
+button = html.Div(
+    id = 'button-1',
+    className='parent',
+    children=[
+        html.Button('Click here to activate interval', id='button',n_clicks=0)
+    ]
+)
+
 # define a radio button for selection victims or crimes
 radio_victims_crimes = html.Div(
     className='menu',
@@ -255,12 +270,23 @@ slider_victims = html.Div([
 
 # create a div for the number of crimes, victims, and neighborhoods with values returned by a function
 
-
+interval = html.Div(
+    id='interval-div',
+    children=[
+        dcc.Interval(
+            id='interval-component',
+            interval=2*1000, # in milliseconds
+            n_intervals=0,
+            disabled=True
+        )
+    ]
+)
 
 # define app layout with crime_type and screen1
 app.layout = html.Div(
     className='container',
     children=[
+        interval,
         header,
         slider_victims,
         crime_type,
@@ -269,7 +295,9 @@ app.layout = html.Div(
         radio_victims_crimes,
         time_period,
         crimes_victims,
-        information
+        information,
+        tmp1,
+        button
     ]
 )
 
@@ -357,9 +385,34 @@ app.clientside_callback(
 )
 
 
+# define callback for interval
+@app.callback(
+    Output('interval-component', 'disabled'),
+    [Input('button', 'n_clicks'),Input('interval-component', 'n_intervals')]
+)
+def update_interval(n_clicks,n_intervals):
+    if n_clicks==0:
+        return dash.no_update
+    # get context
+    ctx = dash.callback_context
+    # get trigger
+    if ctx.triggered:
+        prop = ctx.triggered[0]['prop_id'].split('.')[0] 
+    if prop == 'button':
+        return False
+    elif prop == 'interval-component' and n_intervals%2==0:
+        return True
+    else:
+        return False
+    
 
-
-
+@app.callback(
+    Output('tmp-id1', 'children'),
+    [Input('interval-component', 'n_intervals')]
+)
+def update_output(n_intervals):
+    return str(np.random.randint(100)),True
+        
 
 
 
