@@ -197,3 +197,16 @@ def get_pandas_victims_num_ranked(df):
             .orderBy("num_crimes", ascending=False)
     )
     return df_count_victims.toPandas()
+
+def get_pandas_scatter_plot_matrix(df):
+    df_grouped = (
+        df
+            .groupBy("OFFENSE_CATEGORY_ID", "NEIGHBORHOOD_ID")
+            .agg(count("*").alias("count_crimes"))
+    )
+
+    # pivot the dataframe by OFFENSE_CATEGORY_ID and NEIGHBORHOOD_ID, fill nul with 0
+    df_pivot = df_grouped.groupBy("OFFENSE_CATEGORY_ID").pivot("NEIGHBORHOOD_ID").sum("count_crimes").na.fill(0)
+
+    
+    return df_pivot.toPandas().set_index("OFFENSE_CATEGORY_ID")

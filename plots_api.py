@@ -1,6 +1,7 @@
 import plotly.express as px
+import plotly.graph_objects as go
 from dash import dash_table
-from spark_api import get_pandas_by_day_victims, get_pandas_by_month, get_pandas_by_month_victims,get_pandas_by_year,get_pandas_by_day, get_pandas_by_year_victims, get_pandas_filtered, get_pandas_num_crimes_on_crime_type, get_pandas_num_crimes_on_neighborhood, get_pandas_num_victims_on_crime_type, get_pandas_num_victims_on_neighborhood, get_pandas_timeline, get_pandas_timeline_victims, get_pandas_victims_num_ranked
+from spark_api import get_pandas_by_day_victims, get_pandas_by_month, get_pandas_by_month_victims,get_pandas_by_year,get_pandas_by_day, get_pandas_by_year_victims, get_pandas_filtered, get_pandas_num_crimes_on_crime_type, get_pandas_num_crimes_on_neighborhood, get_pandas_num_victims_on_crime_type, get_pandas_num_victims_on_neighborhood, get_pandas_scatter_plot_matrix, get_pandas_timeline, get_pandas_timeline_victims, get_pandas_victims_num_ranked
 
 x = True
 plot_config = {
@@ -49,7 +50,6 @@ def getMap(df,neighborhood,crime_type,num_victims):
     
 
     geo_df = get_pandas_filtered(df,neighborhood,crime_type,num_victims)
-    print(geo_df.head())
 
     if(geo_df.shape[0]==0): 
         return {}
@@ -74,6 +74,11 @@ def getMap(df,neighborhood,crime_type,num_victims):
     
 
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    # set graph title
+    fig.update_layout(title_text='Map of Crimes in Denver')
+
+    #set height of graph
+    fig.update_layout(height=700)
     return fig
 
 
@@ -81,25 +86,35 @@ def getMap(df,neighborhood,crime_type,num_victims):
 def get_scatter_num_crimes_on_day(df):
     df_pd = get_pandas_by_day(df)
     fig = px.scatter(df_pd, x='date', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Crimes on Day')
     return fig
 def get_scatter_num_crimes_on_month(df):
     df_pd = get_pandas_by_month(df)
     fig = px.scatter(df_pd, x='date', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Crimes on Month')
     return fig
 
 def get_scatter_num_crimes_on_year(df):
     df_pd = get_pandas_by_year(df)
     fig = px.scatter(df_pd, x='date', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Crimes on Year')
     return fig
 
 def get_bar_num_crimes_on_neighborhood(df):
     df_pandas = get_pandas_num_crimes_on_neighborhood(df)
     fig = px.bar(df_pandas, x='NEIGHBORHOOD_ID', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Crimes on Neighborhood')
     return fig
 
 def get_bar_num_crimes_on_crime_type(df):
     df_pandas = get_pandas_num_crimes_on_crime_type(df)
     fig = px.bar(df_pandas, x='OFFENSE_CATEGORY_ID', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Crimes on Crime Type')
     return fig
 
 
@@ -111,8 +126,13 @@ def get_map_timeline(df):
     fig = px.bar(df_pandas, x="count_crimes", y="NEIGHBORHOOD_ID", color="count_crimes", animation_frame="date_month", hover_data=['count_crimes'],template='plotly_dark', color_discrete_sequence=plot_palette)
     # make the animation slower
     fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 1000
+
+
     # set graph dimension
     fig.update_layout(width=700, height=700)    
+
+    #set graph title
+    fig.update_layout(title_text='Timeline of Crimes in Denver')
     
     return fig
 
@@ -121,25 +141,35 @@ def get_map_timeline(df):
 def get_scatter_num_victims_on_day(df):
     df_pd = get_pandas_by_day_victims(df)
     fig = px.scatter(df_pd, x='date', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Victims on Day')
     return fig
 def get_scatter_num_victims_on_month(df):
     df_pd = get_pandas_by_month_victims(df)
     fig = px.scatter(df_pd, x='date', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Victims on Month')
     return fig
 
 def get_scatter_num_victims_on_year(df):
     df_pd = get_pandas_by_year_victims(df)
     fig = px.scatter(df_pd, x='date', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Victims on Year')
     return fig
 
 def get_bar_num_victims_on_neighborhood(df):
     df_pandas = get_pandas_num_victims_on_neighborhood(df)
     fig = px.bar(df_pandas, x='NEIGHBORHOOD_ID', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Victims on Neighborhood')
     return fig
 
 def get_bar_num_victims_on_crime_type(df):
     df_pandas = get_pandas_num_victims_on_crime_type(df)
     fig = px.bar(df_pandas, x='OFFENSE_CATEGORY_ID', y='count',color='count', template='plotly_dark', color_discrete_sequence=plot_palette)
+    # set graph title
+    fig.update_layout(title_text='Number of Victims on Crime Type')
     return fig
 
 
@@ -152,7 +182,10 @@ def get_map_timeline_victims(df):
     # make the animation slower
     fig.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 1000
     # set graph dimension
-    fig.update_layout(width=700, height=700)    
+    fig.update_layout(width=700, height=700)   
+
+    #set graph title
+    fig.update_layout(title_text='Timeline of Victims in Denver') 
     
     return fig
 
@@ -173,3 +206,27 @@ def get_victims_num_ranked(df):
                                     'overflowY': 'auto'
                                 
                                 })
+
+def get_scatter_plot_matrix(df):
+    df_pandas = get_pandas_scatter_plot_matrix(df)
+
+
+    fig = go.Figure(data=go.Heatmap(
+                    z=df_pandas,x=df_pandas.columns,y=df_pandas.index)
+    )
+    fig.update_layout(title_text='Heatmap Crimes-category/Neighborhoods',template='plotly_dark')
+    #set graph dimension
+    fig.update_layout(width=1000, height=1000)
+
+    '''
+    fig = px.imshow(df_pandas, x=df_pandas.columns, y=df_pandas.index)
+    # set box dimension for the graph
+
+    fig.update_layout(
+        height=1000,
+        width=1000,
+        margin=dict(l=20, r=20, t=20, b=20),
+    )
+    '''
+
+    return fig

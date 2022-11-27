@@ -15,7 +15,7 @@ from dash.dependencies import Input, Output, State
 from pyspark.sql.types import IntegerType,StringType,StructField,StructType
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
-from plots_api import get_bar_num_crimes_on_crime_type, get_bar_num_crimes_on_neighborhood, get_bar_num_victims_on_crime_type, get_bar_num_victims_on_neighborhood, get_map_timeline, get_map_timeline_victims, get_scatter_num_crimes_on_day, get_scatter_num_crimes_on_month, get_scatter_num_crimes_on_year, get_scatter_num_victims_on_day, get_scatter_num_victims_on_month, get_scatter_num_victims_on_year, get_victims_num_ranked, getMap
+from plots_api import get_bar_num_crimes_on_crime_type, get_bar_num_crimes_on_neighborhood, get_bar_num_victims_on_crime_type, get_bar_num_victims_on_neighborhood, get_map_timeline, get_map_timeline_victims, get_scatter_num_crimes_on_day, get_scatter_num_crimes_on_month, get_scatter_num_crimes_on_year, get_scatter_num_victims_on_day, get_scatter_num_victims_on_month, get_scatter_num_victims_on_year, get_scatter_plot_matrix, get_victims_num_ranked, getMap
 
 spark = pyspark.sql.SparkSession.builder.appName("Stars").getOrCreate()
 df = spark.read.csv('cleaned_crime.csv', header=True, inferSchema=True)
@@ -88,6 +88,10 @@ app = dash.Dash(
     external_stylesheets=external_stylesheets,
     eager_loading=True
 )
+
+# set the background color of the app
+
+
 
 app.index_string = open('index.html', 'r').read()
 
@@ -282,6 +286,19 @@ interval = html.Div(
     ]
 )
 
+# create a div for the scatter plot matrix
+scatter_plot_matrix = html.Div(
+    className='parent',
+    children=[
+        get_graph('div2',
+            figure=get_scatter_plot_matrix(df),
+            id='scatter_plot_matrix',
+            config=plot_config,
+            clear_on_unhover=True
+        )
+    ]
+)
+
 # define app layout with crime_type and screen1
 app.layout = html.Div(
     className='container',
@@ -296,6 +313,7 @@ app.layout = html.Div(
         time_period,
         crimes_victims,
         information,
+        scatter_plot_matrix,
         tmp1,
         button
     ]
@@ -413,9 +431,6 @@ def update_interval(n_clicks,n_intervals):
 def update_output(n_intervals):
     return str(np.random.randint(100)),True
         
-
-
-
 
 if __name__ == '__main__':
     logger.info('app running')
