@@ -53,21 +53,7 @@ def getMap(df,neighborhood,crime_type,num_victims):
 
     if(geo_df.shape[0]==0): 
         return {}
-    """
-    fig = px.scatter_geo(geo_df, lat="GEO_LAT", lon="GEO_LON", hover_data=["OFFENSE_CATEGORY_ID","VICTIM_COUNT"], color="OFFENSE_CATEGORY_ID",scope='usa')
-             
-    lat_foc = 39.715
-    lon_foc = -104.962
-    fig.update_layout(
-        geo = dict(
-            projection_scale=60, #this is kind of like zoom
-            center=dict(lat=lat_foc, lon=lon_foc), # this will center on the point
-        ))
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    
-    return fig
 
-    """
     fig = px.scatter_mapbox(geo_df, lat=geo_df.GEO_LAT, lon=geo_df.GEO_LON, zoom=10, height=300,hover_data=['NEIGHBORHOOD_ID','OFFENSE_CATEGORY_ID'],color='VICTIM_COUNT')
     fig.update_layout(
         mapbox_style="open-street-map")
@@ -217,16 +203,5 @@ def get_scatter_plot_matrix(df):
     fig.update_layout(title_text='Heatmap Crimes-category/Neighborhoods',template='plotly_dark')
     #set graph dimension
     fig.update_layout(width=1000, height=1000)
-
-    '''
-    fig = px.imshow(df_pandas, x=df_pandas.columns, y=df_pandas.index)
-    # set box dimension for the graph
-
-    fig.update_layout(
-        height=1000,
-        width=1000,
-        margin=dict(l=20, r=20, t=20, b=20),
-    )
-    '''
 
     return fig

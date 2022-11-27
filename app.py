@@ -17,16 +17,18 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from plots_api import get_bar_num_crimes_on_crime_type, get_bar_num_crimes_on_neighborhood, get_bar_num_victims_on_crime_type, get_bar_num_victims_on_neighborhood, get_map_timeline, get_map_timeline_victims, get_scatter_num_crimes_on_day, get_scatter_num_crimes_on_month, get_scatter_num_crimes_on_year, get_scatter_num_victims_on_day, get_scatter_num_victims_on_month, get_scatter_num_victims_on_year, get_scatter_plot_matrix, get_victims_num_ranked, getMap
 
+
+# loading the dataset in spark
+# converting data format
 spark = pyspark.sql.SparkSession.builder.appName("Stars").getOrCreate()
 df = spark.read.csv('cleaned_crime.csv', header=True, inferSchema=True)
 df = df.withColumn("FIRST_OCCURRENCE_DATE", to_timestamp("FIRST_OCCURRENCE_DATE", "MM/dd/yyyy hh:mm:ss a"))
 df = df.withColumn("REPORTED_DATE", to_timestamp("REPORTED_DATE", "MM/dd/yyyy hh:mm:ss a"))
 
 
-
-
 # get the unique values for CRIME_TYPE
 crime_types = df.select('OFFENSE_CATEGORY_ID').distinct().toPandas()['OFFENSE_CATEGORY_ID'].tolist()
+
 #get the uniqui values for NEIGHBORHOOD_ID
 neighborhoods = df.select('NEIGHBORHOOD_ID').distinct().toPandas()['NEIGHBORHOOD_ID'].tolist()
 
@@ -34,15 +36,7 @@ neighborhoods = df.select('NEIGHBORHOOD_ID').distinct().toPandas()['NEIGHBORHOOD
 max_victim_count = df.select(max('VICTIM_COUNT')).collect()[0][0]
 
 
-
-
-# set dash table dimensions
-
-
-
-
-
-
+# basic operations and styling for dash
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -80,21 +74,9 @@ external_stylesheets = [
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.1/css/all.min.css',
 ]
 
+# creating util functions
 def dropdown_options(col):
     return [{'label': name, 'value': name} for name in col]
-
-app = dash.Dash(
-    __name__,
-    external_stylesheets=external_stylesheets,
-    eager_loading=True
-)
-
-# set the background color of the app
-
-
-
-app.index_string = open('index.html', 'r').read()
-
 
 def get_graph(class_name, **kwargs):
     return html.Div(
@@ -104,6 +86,19 @@ def get_graph(class_name, **kwargs):
             html.I(className='fa fa-expand'),
         ],
     )
+
+
+# creating app
+app = dash.Dash(
+    __name__,
+    external_stylesheets=external_stylesheets,
+    eager_loading=True
+)
+
+# setting up the index page
+app.index_string = open('index.html', 'r').read()
+
+# create the dashboard elements
 
 # create header for dashboard with title and logo
 header = html.Div(
@@ -159,13 +154,15 @@ neighborhood = html.Div(
     ]
 )
 
-
+# create div for the map (fig stor is used to solve the issue of the map not updating)
 screen1 = html.Div(
     [
         dcc.Store(id='fig_store'),
         dcc.Graph(id='map-graph1')
     ]
 )
+
+# create div for different graphs
 
 crimes_victims = html.Div(
     className='parent',
@@ -196,6 +193,7 @@ crimes_victims = html.Div(
         )
     ]
 )
+# create the div to show the table num victims/num crimes
 information = html.Div(
     className='parent',
     children=[
@@ -203,6 +201,8 @@ information = html.Div(
     ]
 )
 
+
+# create tmp1 and button for the double function execution experiment
 tmp1 = html.Div(
     className='parent',
     id='tmp-id1',
@@ -216,6 +216,7 @@ button = html.Div(
         html.Button('Click here to activate interval', id='button',n_clicks=0)
     ]
 )
+
 
 # define a radio button for selection victims or crimes
 radio_victims_crimes = html.Div(
@@ -263,6 +264,7 @@ time_period = html.Div(
     ],
 )
 
+# create the slider to select the number of victims
 slider_victims = html.Div([
     dcc.Slider(0, 7, 1,
                value=0,
@@ -273,7 +275,6 @@ slider_victims = html.Div([
 
 
 # create a div for the number of crimes, victims, and neighborhoods with values returned by a function
-
 interval = html.Div(
     id='interval-div',
     children=[
@@ -299,7 +300,7 @@ scatter_plot_matrix = html.Div(
     ]
 )
 
-# define app layout with crime_type and screen1
+# define app layout with the different widgets
 app.layout = html.Div(
     className='container',
     children=[
@@ -320,7 +321,7 @@ app.layout = html.Div(
 )
 
 
-# define callback for radio victims or crimes
+# define callback to update base on time period
 @app.callback(
     Output('scatter_graph1', 'figure'),
     [Input('radio-button', 'value'),
@@ -342,6 +343,7 @@ def update_scatter_graph1(radio_button, time_period):
         else:
             return get_scatter_num_victims_on_day(df)
 
+# defin callbacks to change from crimes or victims
 @app.callback(
     Output('bar-graph1', 'figure'),
     [Input('radio-button', 'value')]
@@ -373,7 +375,7 @@ def update_map_timeline(radio_button):
         return get_map_timeline_victims(df)
 
 
-# define callback for dropdown menu that return getMap function
+# define callback to update map
 @app.callback(
     Output("fig_store", "data"),
     [
@@ -384,7 +386,8 @@ def update_map_timeline(radio_button):
 def update_map(neighborhood,c_type,num_victims):
     return getMap(df,neighborhood,c_type,num_victims)
     
-    
+
+# clientside callback to update map 
 app.clientside_callback(
     '''
     function (figure, graph_id) {
@@ -403,7 +406,7 @@ app.clientside_callback(
 )
 
 
-# define callback for interval
+# define callback for interval experiment
 @app.callback(
     Output('interval-component', 'disabled'),
     [Input('button', 'n_clicks'),Input('interval-component', 'n_intervals')]
@@ -430,8 +433,9 @@ def update_interval(n_clicks,n_intervals):
 )
 def update_output(n_intervals):
     return str(np.random.randint(100)),True
-        
 
+
+# start the app    
 if __name__ == '__main__':
     logger.info('app running')
     port = os.environ.get('PORT', 9000)
