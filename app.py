@@ -14,7 +14,7 @@ import plotly.express as px
 from dash.dependencies import Input, Output, State
 from pyspark.sql.types import IntegerType,StringType,StructField,StructType
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import *
+from pyspark.sql.functions import to_timestamp,max
 from plots_api import get_bar_num_crimes_on_crime_type, get_bar_num_crimes_on_neighborhood, get_bar_num_victims_on_crime_type, get_bar_num_victims_on_neighborhood, get_map_timeline, get_map_timeline_victims, get_scatter_num_crimes_on_day, get_scatter_num_crimes_on_month, get_scatter_num_crimes_on_year, get_scatter_num_victims_on_day, get_scatter_num_victims_on_month, get_scatter_num_victims_on_year, get_scatter_plot_matrix, get_victims_num_ranked, getMap
 
 
@@ -24,6 +24,23 @@ spark = pyspark.sql.SparkSession.builder.appName("Stars").getOrCreate()
 df = spark.read.csv('cleaned_crime.csv', header=True, inferSchema=True)
 df = df.withColumn("FIRST_OCCURRENCE_DATE", to_timestamp("FIRST_OCCURRENCE_DATE", "MM/dd/yyyy hh:mm:ss a"))
 df = df.withColumn("REPORTED_DATE", to_timestamp("REPORTED_DATE", "MM/dd/yyyy hh:mm:ss a"))
+
+cached = {}
+
+# q: what is *args?
+
+
+# defin convert_query function that receiv a variable number of input
+def convert_query(*kwargs):
+    prime = 43
+    ret = 0
+    for x in kwargs:
+        if x is None:
+            y = "All"
+        else:
+            y = x
+        ret += prime*hash(y)
+    return ret
 
 
 # get the unique values for CRIME_TYPE
@@ -349,6 +366,7 @@ def update_scatter_graph1(radio_button, time_period):
     [Input('radio-button', 'value')]
 )
 def update_bar_graph1(radio_button):
+    
     if radio_button == 'Crimes':
         return get_bar_num_crimes_on_neighborhood(df)
     else:
@@ -384,7 +402,13 @@ def update_map_timeline(radio_button):
         Input('my-slider', 'value')
     ])
 def update_map(neighborhood,c_type,num_victims):
-    return getMap(df,neighborhood,c_type,num_victims)
+    key = convert_query(neighborhood,c_type,num_victims)
+    if  key in cached:
+        return cached[key] 
+    fig = getMap(df,neighborhood,c_type,num_victims)
+    cached[key] = fig
+    return fig
+
     
 
 # clientside callback to update map 
